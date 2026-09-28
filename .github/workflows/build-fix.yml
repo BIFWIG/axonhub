@@ -41,7 +41,22 @@ jobs:
 
       - name: Test the patched packages
         working-directory: llm
-        run: go test ./transformer/anthropic/... ./transformer/openai/...
+        run: |
+          set -o pipefail
+          go test ./transformer/anthropic ./transformer/openai ./transformer/openai/responses 2>&1 | tee /tmp/gotest.log
+
+      # Job logs need repo access; the step summary is readable from the run page,
+      # so failures are surfaced here instead of only inside the log viewer.
+      - name: Publish test summary
+        if: always()
+        run: |
+          {
+            echo '### go test output'
+            echo
+            echo '```'
+            tail -c 4000 /tmp/gotest.log 2>/dev/null || echo '(no output captured)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   build:
     name: Build & push linux/amd64
