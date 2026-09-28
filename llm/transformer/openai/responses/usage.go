@@ -1,6 +1,8 @@
 package responses
 
 import (
+	"encoding/json"
+
 	"github.com/looplj/axonhub/llm"
 )
 
@@ -18,6 +20,47 @@ type Usage struct {
 	} `json:"output_tokens_details"`
 	TotalTokens int64    `json:"total_tokens"`
 	Cost        *float64 `json:"cost,omitempty"`
+}
+
+// UnmarshalJSON tolerates provider-specific usage.cost values.
+//
+// Some providers (ZenMux among them) encode cost as a decimal string, e.g.
+// "0.000152", and add a non-standard usage.cost_details object. AxonHub does
+// not trust or propagate upstream cost values, so a non-numeric cost must not
+// break usage parsing: a strict *float64 decode rejected the whole event that
+// carried the usage, which either lost the token accounting or aborted the
+// stream outright.
+//
+// Mirrors (*openai.Usage).UnmarshalJSON in the chat_completions transformer:
+// keep numeric values for round-trips, ignore any other valid JSON shape
+// without losing the token counts.
+func (u *Usage) UnmarshalJSON(data []byte) error {
+	type usageAlias Usage
+
+	decoded := struct {
+		*usageAlias
+
+		Cost json.RawMessage `json:"cost"`
+	}{
+		usageAlias: (*usageAlias)(u),
+	}
+
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+
+	// A present null or non-number cost is an upstream extension that should not
+	// affect usage parsing. u.Cost stays nil -> AxonHub's own price table wins.
+	u.Cost = nil
+
+	if len(decoded.Cost) > 0 {
+		var cost float64
+		if err := json.Unmarshal(decoded.Cost, &cost); err == nil {
+			u.Cost = &cost
+		}
+	}
+
+	return nil
 }
 
 func (u *Usage) ToUsage() *llm.Usage {
