@@ -19,7 +19,7 @@ on:
       - "build/patched-image"
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
@@ -57,6 +57,19 @@ jobs:
             tail -c 4000 /tmp/gotest.log 2>/dev/null || echo '(no output captured)'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # Also commit the raw output to a throwaway branch so it can be read without
+      # repository access (raw.githubusercontent.com).
+      - name: Publish test log to a branch
+        if: always()
+        run: |
+          tail -c 20000 /tmp/gotest.log > ci-gotest.log 2>/dev/null || echo '(no output captured)' > ci-gotest.log
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git checkout -b "ci-logs/run-${GITHUB_RUN_ID}"
+          git add -f ci-gotest.log
+          git commit -m "ci: go test output for run ${GITHUB_RUN_ID}" || true
+          git push -u origin "HEAD:ci-logs/run-${GITHUB_RUN_ID}"
 
   build:
     name: Build & push linux/amd64
