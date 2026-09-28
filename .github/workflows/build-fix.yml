@@ -1,11 +1,11 @@
 name: Build patched AxonHub (usage.cost fix)
 
-# Fork-only workflow. Publishes to GHCR under your own account and never touches
+# Fork-only workflow. Publishes to GHCR under this account and never touches
 # looplj/axonhub. No repository secrets needed (GITHUB_TOKEN is enough) — but
 # Settings -> Actions -> General -> Workflow permissions must be "Read and write".
 #
-# Run it from the Actions tab, pick the branch, and it tags the image with the
-# branch name (or with the `tag` input when you trigger it manually).
+# Run it from the Actions tab. The image is tagged `costfix` by default; pass the
+# `tag` input to override.
 
 on:
   workflow_dispatch:
@@ -22,13 +22,40 @@ permissions:
   contents: read
   packages: write
 
+env:
+  IMAGE: ghcr.io/bifwig/axonhub
+
 jobs:
-  build:
-    name: Build & push linux/amd64
+  test:
+    name: go test (patched transformers)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: llm/go.mod
+          cache-dependency-path: llm/go.sum
+
+      - name: Test the patched packages
+        working-directory: llm
+        run: go test ./transformer/anthropic/... ./transformer/openai/...
+
+  build:
+    name: Build & push linux/amd64
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # A branch name like "build/patched-image" is not a valid Docker tag, so the
+      # tag is resolved here instead of using github.ref_name directly.
+      - name: Resolve image tag
+        id: tag
+        run: echo "value=${{ inputs.tag || 'costfix' }}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -46,7 +73,7 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/axonhub:${{ inputs.tag || github.ref_name }}
+          tags: ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
