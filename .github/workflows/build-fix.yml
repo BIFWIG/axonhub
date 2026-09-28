@@ -1,0 +1,108 @@
+name: Build patched AxonHub (usage.cost fix)
+
+# Fork-only workflow. Publishes to GHCR under this account and never touches
+# looplj/axonhub. No repository secrets needed (GITHUB_TOKEN is enough) — but
+# Settings -> Actions -> General -> Workflow permissions must be "Read and write".
+#
+# Run it from the Actions tab. The image is tagged `costfix` by default; pass the
+# `tag` input to override.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to push"
+        required: false
+        default: "costfix"
+  push:
+    branches:
+      - "build/patched-image"
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  IMAGE: ghcr.io/bifwig/axonhub
+
+jobs:
+  test:
+    name: go test (patched transformers)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: llm/go.mod
+          cache-dependency-path: llm/go.sum
+
+      - name: Test the patched packages
+        working-directory: llm
+        run: |
+          set -o pipefail
+          go test ./transformer/anthropic ./transformer/openai ./transformer/openai/responses 2>&1 | tee /tmp/gotest.log
+
+      # Job logs need repo access; the step summary is readable from the run page,
+      # so failures are surfaced here instead of only inside the log viewer.
+      - name: Publish test summary
+        if: always()
+        run: |
+          {
+            echo '### go test output'
+            echo
+            echo '```'
+            tail -c 4000 /tmp/gotest.log 2>/dev/null || echo '(no output captured)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Also commit the raw output to a throwaway branch so it can be read without
+      # repository access (raw.githubusercontent.com).
+      - name: Publish test log to a branch
+        if: always()
+        run: |
+          tail -c 20000 /tmp/gotest.log > ci-gotest.log 2>/dev/null || echo '(no output captured)' > ci-gotest.log
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git checkout -b "ci-logs/run-${GITHUB_RUN_ID}"
+          git add -f ci-gotest.log
+          git commit -m "ci: go test output for run ${GITHUB_RUN_ID}" || true
+          git push -u origin "HEAD:ci-logs/run-${GITHUB_RUN_ID}"
+
+  build:
+    name: Build & push linux/amd64
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # A branch name like "build/patched-image" is not a valid Docker tag, so the
+      # tag is resolved here instead of using github.ref_name directly.
+      - name: Resolve image tag
+        id: tag
+        run: echo "value=${{ inputs.tag || 'costfix' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
