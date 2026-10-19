@@ -1,0 +1,55 @@
+go: downloading github.com/google/uuid v1.6.0
+go: downloading github.com/kaptinlin/jsonrepair v0.2.4
+go: downloading github.com/gorilla/websocket v1.5.3
+go: downloading github.com/samber/lo v1.52.0
+go: downloading github.com/tidwall/gjson v1.18.0
+go: downloading github.com/google/go-cmp v0.7.0
+go: downloading github.com/stretchr/testify v1.11.1
+go: downloading github.com/spf13/cast v1.10.0
+go: downloading github.com/tidwall/sjson v1.2.5
+go: downloading github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.8
+go: downloading github.com/klauspost/compress v1.17.9
+go: downloading github.com/wtj-0527/go-sse v0.0.0-20260811060543-0bb36b8ea0cd
+go: downloading github.com/google/jsonschema-go v0.3.1-0.20251120200837-98a387e3b975
+go: downloading golang.org/x/oauth2 v0.36.0
+go: downloading google.golang.org/api v0.264.0
+go: downloading golang.org/x/text v0.41.0
+go: downloading github.com/tidwall/match v1.1.1
+go: downloading github.com/tidwall/pretty v1.2.0
+go: downloading github.com/davecgh/go-spew v1.1.1
+go: downloading github.com/pmezard/go-difflib v1.0.0
+go: downloading github.com/aws/smithy-go v1.24.3
+go: downloading github.com/stretchr/objx v0.5.2
+go: downloading cloud.google.com/go/compute/metadata v0.9.0
+go: downloading gopkg.in/yaml.v3 v3.0.1
+go: downloading google.golang.org/grpc v1.83.2
+go: downloading cloud.google.com/go/auth v0.18.2
+go: downloading cloud.google.com/go/auth/oauth2adapt v0.2.8
+go: downloading go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0
+go: downloading golang.org/x/time v0.14.0
+go: downloading go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0
+go: downloading golang.org/x/net v0.58.0
+go: downloading github.com/google/s2a-go v0.1.9
+go: downloading github.com/googleapis/gax-go/v2 v2.17.0
+go: downloading go.opentelemetry.io/otel v1.44.0
+go: downloading go.opentelemetry.io/otel/metric v1.44.0
+go: downloading go.opentelemetry.io/otel/trace v1.44.0
+go: downloading google.golang.org/protobuf v1.36.12
+go: downloading github.com/googleapis/enterprise-certificate-proxy v0.3.11
+go: downloading github.com/felixge/httpsnoop v1.0.4
+go: downloading github.com/go-logr/logr v1.4.3
+go: downloading google.golang.org/genproto/googleapis/rpc v0.0.0-20260831171406-18b4a7587f8a
+go: downloading golang.org/x/sys v0.47.0
+go: downloading github.com/go-logr/stdr v1.2.2
+go: downloading go.opentelemetry.io/auto/sdk v1.2.1
+go: downloading github.com/cespare/xxhash/v2 v2.3.0
+go: downloading golang.org/x/sync v0.22.0
+go: downloading golang.org/x/crypto v0.55.0
+# github.com/looplj/axonhub/llm/transformer/anthropic [github.com/looplj/axonhub/llm/transformer/anthropic.test]
+transformer/anthropic/usage_json.go:9:17: method Usage.UnmarshalJSON already declared at transformer/anthropic/usage.go:49:17
+# github.com/looplj/axonhub/llm/transformer/anthropic
+transformer/anthropic/usage_json.go:9:17: method Usage.UnmarshalJSON already declared at transformer/anthropic/usage.go:49:17
+FAIL	github.com/looplj/axonhub/llm/transformer/anthropic [build failed]
+ok  	github.com/looplj/axonhub/llm/transformer/openai	0.101s
+FAIL	github.com/looplj/axonhub/llm/transformer/openai/responses [build failed]
+FAIL
